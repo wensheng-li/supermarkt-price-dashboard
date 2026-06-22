@@ -1,0 +1,18 @@
+# Environment files — NEVER commit these
+.env
+*.env.local
+
+# Node
+node_modules/
+dist/
+build/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+scraper/.scrapy/
+
+# OS
+.DS_Store
+Thumbs.db

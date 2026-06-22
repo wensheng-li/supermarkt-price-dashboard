@@ -1,0 +1,15 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgis/postgis:15-3.3 # PostgreSQL + PostGIS for geo queries
+    environment:
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: dev
+      POSTGRES_DB: supermarket_db
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
