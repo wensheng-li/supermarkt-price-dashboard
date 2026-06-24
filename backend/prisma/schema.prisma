@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Store {
+  id        String   @id @default(cuid())
+  name      String           // "Woolworths", "Coles", "IGA"
+  chain     String           // "woolworths", "coles", "iga"
+  address   String
+  postcode  String
+  suburb    String
+  latitude  Float
+  longitude Float
+  createdAt DateTime @default(now())
+
+  prices    Price[]
+
+  @@index([postcode])
+}
+
+model Product {
+  id        String   @id @default(cuid())
+  name      String
+  brand     String?
+  category  String           // "Dairy", "Bakery", etc.
+  unit      String?          // "2L", "500g", etc.
+  barcode   String?  @unique
+  imageUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  prices    Price[]
+
+  @@index([category])
+  @@index([name])
+}
+
+model Price {
+  id         String   @id @default(cuid())
+  price      Float
+  wasPrice   Float?           // original price if on special
+  isOnSale   Boolean  @default(false)
+  scrapedAt  DateTime @default(now())
+
+  product    Product  @relation(fields: [productId], references: [id])
+  productId  String
+
+  store      Store    @relation(fields: [storeId], references: [id])
+  storeId    String
+
+  @@index([productId])
+  @@index([storeId])
+  @@index([scrapedAt])
+}
