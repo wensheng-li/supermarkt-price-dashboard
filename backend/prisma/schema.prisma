@@ -4,14 +4,14 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  // url      = env("DATABASE_URL")
 }
 
 model Store {
   id        String   @id @default(cuid())
   name      String           // "Woolworths", "Coles", "IGA"
   chain     String           // "woolworths", "coles", "iga"
-  address   String
+  address   String  @unique
   postcode  String
   suburb    String
   latitude  Float
