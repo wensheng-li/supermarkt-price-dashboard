@@ -18,7 +18,7 @@ def fetch_products_openfoodfacts(query: str, retries: int = 3) -> list:
                     "search_simple":  1,
                     "action":         "process",
                     "json":           1,
-                    "page_size":      20,
+                    "page_size":      20, # Fetch up 20 products
                     "countries_tags": "australia",
                     "fields": "product_name,brands,categories_tags,quantity,code,image_url",
                 },

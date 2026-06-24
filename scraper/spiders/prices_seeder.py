@@ -56,6 +56,14 @@ STORE_PRICE_MULTIPLIERS = {
     "iga":        random.uniform(1.05, 1.15),
 }
 
+# Probability that a store stocks any given product
+# IGA stocks ~70% of what the majors carry — smaller range
+STORE_STOCK_PROBABILITY = {
+    "woolworths": 0.95,
+    "coles":      0.95,
+    "iga":        0.70,
+}
+
 product_pipeline = ProductPipeline()
 price_pipeline   = PricePipeline()
 
@@ -81,6 +89,7 @@ def seed_prices_for_products(products: list):
         conn.close()
 
     seeded_count = 0
+    skipped_count = 0
 
     for product in products:
         # Determine base price from category
@@ -90,6 +99,17 @@ def seed_prices_for_products(products: list):
 
         for store in STORES:
             chain    = store["chain"]
+
+            # Skip this store with probability (1 - stock_probability)
+            # e.g. IGA only stocks ~70% of products
+            if random.random() > STORE_STOCK_PROBABILITY[chain]:
+                skipped_count += 1
+                print(
+                    f"    {store['name']:12} —  "
+                    f"not stocked  — {product['name']}"
+                )
+                continue
+
             store_id = store_ids[chain]
             price    = generate_price(base_price, chain)
 
@@ -121,3 +141,4 @@ def seed_prices_for_products(products: list):
                 print(f"    {store['name']:12} ${price:.2f}{sale_note}  — {product['name']}")
 
     print(f"\n  Seeded {seeded_count} price records across {len(STORES)} stores")
+    print(f"  Skipped {skipped_count} store/product combinations (not stocked)")
