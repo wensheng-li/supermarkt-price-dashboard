@@ -26,34 +26,46 @@ supermarket-price-dashboard/
 └── README.md
 ```
 
-## Initialise the Reac app
+## Keep the server running locally
 
-Inside the project, run: 
+### Run the server locally
 
-`cd frontend` 
+`cd supermarket-price-dashboard`
 
-`npm create vite@latest . -- --template react` 
+`docker compose up -d`
 
-`npm install` 
+### Stop the server
 
-Then install all the libraries: 
+`docker compose down`
 
-`npm install \ react-router-dom \ @tanstack/react-query \ axios \ recharts \ lucide-react` 
+## Initialise the React app
 
-`npm install -D \ tailwindcss \ postcss \ autoprefixer` 
+Inside the project, run:
 
-`npx tailwindcss init -p` **If an error is detected, please refer to the Note below** 
+`cd frontend`
+
+`npm create vite@latest . -- --template react`
+
+`npm install`
+
+Then install all the libraries:
+
+`npm install \ react-router-dom \ @tanstack/react-query \ axios \ recharts \ lucide-react`
+
+`npm install -D \ tailwindcss \ postcss \ autoprefixer`
+
+`npx tailwindcss init -p` **If an error is detected, please refer to the Note below**
 
 ### Notes
 
 > Error detection: `npm error could not determine executable to run`
-> 
+>
 > This may be caused by the fact that the Tailwind CLI isn't found via **npx** with the version installed.
-> 
+>
 > Run `./node_modules/.bin/tailwindcss init -p` instead. **OR**
-> 
+>
 > try reinstalling Tailwind with an explicit version that includes the CLI:
-> 
+>
 > `npm install -D tailwindcss@3 postcss autoprefixer`
-> 
-> `./node_modules/.bin/tailwindcss init -p` 
+>
+> `./node_modules/.bin/tailwindcss init -p`

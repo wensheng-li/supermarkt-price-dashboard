@@ -7,36 +7,6 @@ import random
 from pipelines.database import ProductPipeline, PricePipeline
 from utils.db import get_connection, upsert_store
 
-STORES = [
-    {
-        "name":      "Woolworths",
-        "chain":     "woolworths",
-        "address":   "500 George St, Sydney NSW 2000",
-        "postcode":  "2000",
-        "suburb":    "Sydney",
-        "latitude":  -33.8748,
-        "longitude": 151.2069,
-    },
-    {
-        "name":      "Coles",
-        "chain":     "coles",
-        "address":   "Shop 1 World Square, Sydney NSW 2000",
-        "postcode":  "2000",
-        "suburb":    "Sydney",
-        "latitude":  -33.8765,
-        "longitude": 151.2073,
-    },
-    {
-        "name":      "IGA",
-        "chain":     "iga",
-        "address":   "152 Pyrmont St, Pyrmont NSW 2009",
-        "postcode":  "2009",
-        "suburb":    "Pyrmont",
-        "latitude":  -33.8731,
-        "longitude": 151.1947,
-    },
-]
-
 # Realistic base price ranges by category
 CATEGORY_PRICE_RANGES = {
     "Dairy":      (1.50, 6.00),
@@ -74,17 +44,27 @@ def generate_price(base_price: float, chain: str) -> float:
     return round(round(raw / 0.05) * 0.05, 2)
 
 
-def seed_prices_for_products(products: list):
+def seed_prices_for_products(products: list, stores: list = None):
     """
     Given a list of product dicts (from Open Food Facts),
-    seed realistic prices at all three stores via the pipeline layer.
+    seed realistic prices at the supplied stores via the pipeline layer.
     """
-    # Upsert all stores once upfront and cache their IDs
+    if not stores:
+        print("No stores available for seeding prices.")
+        return
+
+    # Ensure every store has an address for a stable upsert key.
+    for store in stores:
+        if not store.get("address"):
+            store["address"] = f"{store.get('name', 'store')}|{store.get('postcode', '')}".strip()
+
+    # Upsert all stores once upfront and cache their IDs by stable store key.
     conn = get_connection()
     store_ids = {}
     try:
-        for store in STORES:
-            store_ids[store["chain"]] = upsert_store(conn, store)
+        for store in stores:
+            key = store["address"]
+            store_ids[key] = upsert_store(conn, store)
     finally:
         conn.close()
 
@@ -92,42 +72,42 @@ def seed_prices_for_products(products: list):
     skipped_count = 0
 
     for product in products:
-        # Determine base price from category
-        category    = product.get("category", "General")
+        category = product.get("category", "General")
         price_range = CATEGORY_PRICE_RANGES.get(category, (2.00, 10.00))
-        base_price  = random.uniform(*price_range)
+        base_price = random.uniform(*price_range)
 
-        for store in STORES:
-            chain    = store["chain"]
-
-            # Skip this store with probability (1 - stock_probability)
-            # e.g. IGA only stocks ~70% of products
-            if random.random() > STORE_STOCK_PROBABILITY[chain]:
+        for store in stores:
+            chain = store.get("chain", "independent").lower()
+            stock_probability = STORE_STOCK_PROBABILITY.get(chain, 0.80)
+            if random.random() > stock_probability:
                 skipped_count += 1
                 print(
-                    f"    {store['name']:12} —  "
-                    f"not stocked  — {product['name']}"
+                    f"    {store['name']:12} —  not stocked  — {product['name']}"
                 )
                 continue
 
-            store_id = store_ids[chain]
-            price    = generate_price(base_price, chain)
+            store_key = store.get("address") or f"{store.get('name')}|{store.get('postcode')}"
+            store_id = store_ids.get(store_key)
+            if not store_id:
+                print(f"    Skipping store without ID: {store}")
+                continue
 
-            # 20% chance of being on sale
+            price = generate_price(base_price, chain)
             is_on_sale = random.random() < 0.20
-            was_price  = round(price * random.uniform(1.10, 1.30), 2) if is_on_sale else None
+            was_price = (
+                round(price * random.uniform(1.10, 1.30), 2)
+                if is_on_sale
+                else None
+            )
 
-            # Write product first via ProductPipeline (validates + upserts)
             product_id = product_pipeline.process(
                 {**product, "price": price, "wasPrice": was_price, "isOnSale": is_on_sale},
                 store,
             )
 
             if not product_id:
-                # ProductPipeline already printed the reason — skip price
                 continue
 
-            # Write price separately via PricePipeline
             success = price_pipeline.process(
                 price=price,
                 product_id=product_id,
@@ -140,5 +120,5 @@ def seed_prices_for_products(products: list):
                 sale_note = f" (was ${was_price})" if is_on_sale else ""
                 print(f"    {store['name']:12} ${price:.2f}{sale_note}  — {product['name']}")
 
-    print(f"\n  Seeded {seeded_count} price records across {len(STORES)} stores")
+    print(f"\n  Seeded {seeded_count} price records across {len(stores)} stores")
     print(f"  Skipped {skipped_count} store/product combinations (not stocked)")

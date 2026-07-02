@@ -1,14 +1,17 @@
 import { useState } from 'react'
 import { Search, MapPin } from 'lucide-react'
 
+const AU_STATES = ['ACT', 'NSW', 'NT', 'QLD', 'SA', 'TAS', 'VIC', 'WA']
+
 export default function SearchBar({ onSearch }) {
   const [postcode, setPostcode]       = useState('')
+  const [state, setState] = useState('')
   const [productName, setProductName] = useState('')
 
   function handleSubmit(e) {
     e.preventDefault()
     if (!postcode || !productName) return
-    onSearch({ postcode, productName })
+    onSearch({ postcode, state,productName })
   }
 
   return (
@@ -32,6 +35,19 @@ export default function SearchBar({ onSearch }) {
                      w-32 focus:outline-none focus:ring-2 focus:ring-brand/40"
         />
       </div>
+      {/* State */}
+      <select
+        value={state}
+        onChange={e => setState(e.target.value)}
+        className="py-2 px-3 text-sm border border-gray-200 rounded-lg
+                   text-gray-600 focus:outline-none focus:ring-2
+                   focus:ring-brand/40 flex-shrink-0"
+      >
+        <option value="">State (optional)</option>
+        {AU_STATES.map(s => (
+          <option key={s} value={s}>{s}</option>
+        ))}
+      </select>
 
       {/* Product name input */}
       <input
